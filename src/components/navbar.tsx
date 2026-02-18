@@ -1,13 +1,33 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, PawPrint } from "lucide-react";
-import { useState } from "react";
+import { Menu, PawPrint, LayoutDashboard } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 
 export function Navbar() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -25,14 +45,25 @@ export function Navbar() {
           >
             Mascotas
           </Link>
-          <Link href="/login">
-            <Button variant="ghost" size="sm">
-              Iniciar sesion
-            </Button>
-          </Link>
-          <Link href="/registro">
-            <Button size="sm">Registrarse</Button>
-          </Link>
+          {user ? (
+            <Link href="/dashboard">
+              <Button size="sm" className="gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Mi panel
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  Iniciar sesion
+                </Button>
+              </Link>
+              <Link href="/registro">
+                <Button size="sm">Registrarse</Button>
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Mobile nav */}
@@ -51,14 +82,25 @@ export function Navbar() {
               >
                 Mascotas
               </Link>
-              <Link href="/login" onClick={() => setOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start">
-                  Iniciar sesion
-                </Button>
-              </Link>
-              <Link href="/registro" onClick={() => setOpen(false)}>
-                <Button className="w-full">Registrarse</Button>
-              </Link>
+              {user ? (
+                <Link href="/dashboard" onClick={() => setOpen(false)}>
+                  <Button className="w-full gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Mi panel
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Iniciar sesion
+                    </Button>
+                  </Link>
+                  <Link href="/registro" onClick={() => setOpen(false)}>
+                    <Button className="w-full">Registrarse</Button>
+                  </Link>
+                </>
+              )}
             </nav>
           </SheetContent>
         </Sheet>
