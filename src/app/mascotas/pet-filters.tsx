@@ -32,7 +32,7 @@ function FilterSelect({
 
   const update = (val: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (val) {
+    if (val && val !== "__all__") {
       params.set(paramKey, val);
     } else {
       params.delete(paramKey);
@@ -47,12 +47,12 @@ function FilterSelect({
   return (
     <div className="space-y-1">
       <Label className="text-xs font-semibold text-foreground">{label}</Label>
-      <Select value={value} onValueChange={update} disabled={disabled}>
+      <Select value={value || "__all__"} onValueChange={update} disabled={disabled}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">{placeholder}</SelectItem>
+          <SelectItem value="__all__">{placeholder}</SelectItem>
           {options.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}
