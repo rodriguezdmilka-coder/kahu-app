@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { PetCard } from "@/components/pet-card";
 import { PetFilters } from "./pet-filters";
@@ -48,7 +49,9 @@ export default async function MascotasPage({
         Encuentra a tu nuevo companero de vida.
       </p>
 
-      <PetFilters />
+      <Suspense fallback={<div className="mb-8 h-24 animate-pulse rounded-lg bg-muted" />}>
+        <PetFilters />
+      </Suspense>
 
       {pets && pets.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
