@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { MapPin, Calendar, Heart, ArrowLeft, User } from "lucide-react";
-import type { Pet, Profile, AdoptionRequest } from "@/lib/types";
+import type { Pet, Profile } from "@/lib/types";
 
 function formatAge(months: number): string {
   if (months < 12) return `${months} ${months === 1 ? "mes" : "meses"}`;
@@ -30,19 +30,47 @@ function formatAge(months: number): string {
 export function PetDetail({
   pet,
   rescuerName,
-  userProfile,
-  existingRequest,
 }: {
   pet: Pet;
   rescuerName: string;
-  userProfile: Profile | null;
-  existingRequest: AdoptionRequest | null;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(!!existingRequest);
+  const [submitted, setSubmitted] = useState(false);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        setAuthChecked(true);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      setUserProfile(profile);
+
+      const { data: existing } = await supabase
+        .from("adoption_requests")
+        .select("id")
+        .eq("adopter_id", user.id)
+        .eq("pet_id", pet.id)
+        .maybeSingle();
+
+      if (existing) setSubmitted(true);
+
+      setAuthChecked(true);
+    });
+  }, [pet.id]);
 
   const handleAdoptionRequest = async () => {
     if (!userProfile || !message.trim()) return;
@@ -133,7 +161,11 @@ export function PetDetail({
             <Badge variant="secondary" className="text-base">
               {pet.status === "en_proceso" ? "En proceso de adopcion" : "Adoptado"}
             </Badge>
-          ) : submitted || existingRequest ? (
+          ) : !authChecked ? (
+            <Button size="lg" className="w-full" disabled>
+              Cargando...
+            </Button>
+          ) : submitted ? (
             <div className="rounded-lg border bg-primary/5 p-4 text-center">
               <p className="font-medium text-primary">Solicitud enviada</p>
               <p className="text-sm text-muted-foreground">
@@ -142,14 +174,17 @@ export function PetDetail({
             </div>
           ) : !userProfile ? (
             <div className="space-y-2">
-              <Link href="/registro">
+              <Link href="/login">
                 <Button size="lg" className="w-full gap-2">
                   <Heart className="h-4 w-4" />
-                  Registrate para adoptar
+                  Inicia sesion para adoptar
                 </Button>
               </Link>
               <p className="text-center text-xs text-muted-foreground">
-                Necesitas una cuenta para solicitar la adopcion.
+                Necesitas una cuenta para solicitar la adopcion.{" "}
+                <Link href="/registro" className="underline">
+                  Registrate aqui
+                </Link>
               </p>
             </div>
           ) : userProfile.role === "rescatista" ? (
