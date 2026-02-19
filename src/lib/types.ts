@@ -2,7 +2,7 @@ export type UserRole = "rescatista" | "adoptante";
 
 export type PetSpecies = "perro" | "gato";
 
-export type PetSize = "pequeno" | "mediano" | "grande";
+export type PetSize = "pequeno" | "mediano" | "grande" | "gigante";
 
 export type PetStatus = "disponible" | "en_proceso" | "adoptado";
 
@@ -30,6 +30,8 @@ export interface Pet {
   photos: string[];
   status: PetStatus;
   city: string;
+  state: string | null;
+  recovery_fee: boolean;
   rescuer_id: string;
   created_at: string;
 }

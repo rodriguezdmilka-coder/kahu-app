@@ -6,7 +6,15 @@ import type { Pet } from "@/lib/types";
 export default async function MascotasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ especie?: string; ciudad?: string; tamano?: string }>;
+  searchParams: Promise<{
+    especie?: string;
+    tamano?: string;
+    edad?: string;
+    sexo?: string;
+    cuota?: string;
+    estado?: string;
+    ciudad?: string;
+  }>;
 }) {
   const params = await searchParams;
   const supabase = await createClient();
@@ -17,15 +25,19 @@ export default async function MascotasPage({
     .eq("status", "disponible")
     .order("created_at", { ascending: false });
 
-  if (params.especie) {
-    query = query.eq("species", params.especie);
-  }
-  if (params.ciudad) {
-    query = query.ilike("city", `%${params.ciudad}%`);
-  }
-  if (params.tamano) {
-    query = query.eq("size", params.tamano);
-  }
+  if (params.especie) query = query.eq("species", params.especie);
+  if (params.tamano)  query = query.eq("size", params.tamano);
+  if (params.sexo)    query = query.eq("sex", params.sexo);
+  if (params.estado)  query = query.eq("state", params.estado);
+  if (params.ciudad)  query = query.eq("city", params.ciudad);
+
+  if (params.cuota === "si")  query = query.eq("recovery_fee", true);
+  if (params.cuota === "no")  query = query.eq("recovery_fee", false);
+
+  if (params.edad === "cachorro") query = query.lt("age_months", 12);
+  if (params.edad === "joven")    query = query.gte("age_months", 12).lt("age_months", 48);
+  if (params.edad === "adulto")   query = query.gte("age_months", 48).lt("age_months", 108);
+  if (params.edad === "senior")   query = query.gte("age_months", 108);
 
   const { data: pets } = await query;
 

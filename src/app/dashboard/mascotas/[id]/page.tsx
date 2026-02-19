@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import type { Pet } from "@/lib/types";
+import { ESTADOS, ESTADOS_CIUDADES } from "@/lib/mexico-locations";
 
 export default function EditarMascotaPage() {
   const router = useRouter();
@@ -33,9 +34,13 @@ export default function EditarMascotaPage() {
     sex: "",
     size: "",
     description: "",
+    state: "",
     city: "",
     status: "",
+    recovery_fee: false,
   });
+
+  const ciudades = formData.state ? (ESTADOS_CIUDADES[formData.state] ?? []) : [];
 
   useEffect(() => {
     const load = async () => {
@@ -56,17 +61,17 @@ export default function EditarMascotaPage() {
           sex: data.sex,
           size: data.size,
           description: data.description,
+          state: data.state || "",
           city: data.city,
           status: data.status,
+          recovery_fee: data.recovery_fee ?? false,
         });
       }
     };
     load();
   }, [params.id]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -86,8 +91,10 @@ export default function EditarMascotaPage() {
         sex: formData.sex,
         size: formData.size,
         description: formData.description,
+        state: formData.state,
         city: formData.city,
         status: formData.status,
+        recovery_fee: formData.recovery_fee,
       })
       .eq("id", params.id);
 
@@ -121,12 +128,7 @@ export default function EditarMascotaPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mb-4 gap-1"
-        onClick={() => router.back()}
-      >
+      <Button variant="ghost" size="sm" className="mb-4 gap-1" onClick={() => router.back()}>
         <ArrowLeft className="h-4 w-4" />
         Volver
       </Button>
@@ -150,25 +152,15 @@ export default function EditarMascotaPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                />
+                <Input id="name" name="name" required value={formData.name} onChange={handleChange} />
               </div>
               <div className="space-y-2">
-                <Label>Estado</Label>
+                <Label>Estatus de adopcion</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, status: val })
-                  }
+                  onValueChange={(val) => setFormData({ ...formData, status: val })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="disponible">Disponible</SelectItem>
                     <SelectItem value="en_proceso">En proceso</SelectItem>
@@ -193,15 +185,8 @@ export default function EditarMascotaPage() {
               </div>
               <div className="space-y-2">
                 <Label>Sexo</Label>
-                <Select
-                  value={formData.sex}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, sex: val })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={formData.sex} onValueChange={(val) => setFormData({ ...formData, sex: val })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="macho">Macho</SelectItem>
                     <SelectItem value="hembra">Hembra</SelectItem>
@@ -209,20 +194,14 @@ export default function EditarMascotaPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Tamano</Label>
-                <Select
-                  value={formData.size}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, size: val })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Label>Tamaño</Label>
+                <Select value={formData.size} onValueChange={(val) => setFormData({ ...formData, size: val })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pequeno">Pequeno</SelectItem>
-                    <SelectItem value="mediano">Mediano</SelectItem>
-                    <SelectItem value="grande">Grande</SelectItem>
+                    <SelectItem value="pequeno">Pequeño (hasta 10 kg)</SelectItem>
+                    <SelectItem value="mediano">Mediano (11–25 kg)</SelectItem>
+                    <SelectItem value="grande">Grande (26–45 kg)</SelectItem>
+                    <SelectItem value="gigante">Gigante (más de 45 kg)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -230,23 +209,69 @@ export default function EditarMascotaPage() {
 
             <div className="space-y-2">
               <Label htmlFor="breed">Raza (opcional)</Label>
-              <Input
-                id="breed"
-                name="breed"
-                value={formData.breed}
-                onChange={handleChange}
-              />
+              <Input id="breed" name="breed" value={formData.breed} onChange={handleChange} />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select
+                  value={formData.state}
+                  onValueChange={(val) => setFormData({ ...formData, state: val, city: "" })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Seleccionar estado" /></SelectTrigger>
+                  <SelectContent>
+                    {ESTADOS.map((estado) => (
+                      <SelectItem key={estado} value={estado}>{estado}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Ciudad</Label>
+                <Select
+                  value={formData.city}
+                  onValueChange={(val) => setFormData({ ...formData, city: val })}
+                  disabled={!formData.state}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={formData.state ? "Seleccionar ciudad" : "Elige estado primero"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ciudades.map((ciudad) => (
+                      <SelectItem key={ciudad} value={ciudad}>{ciudad}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="city">Ciudad</Label>
-              <Input
-                id="city"
-                name="city"
-                required
-                value={formData.city}
-                onChange={handleChange}
-              />
+              <Label>¿Tiene cuota de recuperación?</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, recovery_fee: true })}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm transition-colors ${
+                    formData.recovery_fee
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted"
+                  }`}
+                >
+                  Sí
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, recovery_fee: false })}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm transition-colors ${
+                    !formData.recovery_fee
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted"
+                  }`}
+                >
+                  No
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">

@@ -1,8 +1,6 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -10,85 +8,151 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, X } from "lucide-react";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { ESTADOS, ESTADOS_CIUDADES } from "@/lib/mexico-locations";
 
-export function PetFilters() {
+function FilterSelect({
+  label,
+  paramKey,
+  options,
+  disabled = false,
+  placeholder = "Todos",
+}: {
+  label: string;
+  paramKey: string;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+  placeholder?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [ciudad, setCiudad] = useState(searchParams.get("ciudad") || "");
+  const value = searchParams.get(paramKey) || "";
 
-  const updateFilters = (key: string, value: string) => {
+  const update = (val: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value && value !== "todos") {
-      params.set(key, value);
+    if (val) {
+      params.set(paramKey, val);
     } else {
-      params.delete(key);
+      params.delete(paramKey);
+    }
+    // Si cambia el estado, limpia la ciudad
+    if (paramKey === "estado") {
+      params.delete("ciudad");
     }
     router.push(`/mascotas?${params.toString()}`);
   };
 
-  const clearFilters = () => {
-    setCiudad("");
-    router.push("/mascotas");
-  };
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs font-semibold text-foreground">{label}</Label>
+      <Select value={value} onValueChange={update} disabled={disabled}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">{placeholder}</SelectItem>
+          {options.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
+export function PetFilters() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const estadoSeleccionado = searchParams.get("estado") || "";
   const hasFilters = searchParams.toString().length > 0;
 
+  const ciudades = estadoSeleccionado
+    ? (ESTADOS_CIUDADES[estadoSeleccionado] ?? []).map((c) => ({ value: c, label: c }))
+    : [];
+
   return (
-    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-      <Select
-        value={searchParams.get("especie") || "todos"}
-        onValueChange={(val) => updateFilters("especie", val)}
-      >
-        <SelectTrigger className="w-full sm:w-40">
-          <SelectValue placeholder="Especie" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="todos">Todas</SelectItem>
-          <SelectItem value="perro">Perros</SelectItem>
-          <SelectItem value="gato">Gatos</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={searchParams.get("tamano") || "todos"}
-        onValueChange={(val) => updateFilters("tamano", val)}
-      >
-        <SelectTrigger className="w-full sm:w-40">
-          <SelectValue placeholder="Tamano" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="todos">Todos</SelectItem>
-          <SelectItem value="pequeno">Pequeno</SelectItem>
-          <SelectItem value="mediano">Mediano</SelectItem>
-          <SelectItem value="grande">Grande</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <div className="flex flex-1 gap-2">
-        <Input
-          placeholder="Buscar por ciudad..."
-          value={ciudad}
-          onChange={(e) => setCiudad(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") updateFilters("ciudad", ciudad);
-          }}
+    <div className="mb-8 space-y-3">
+      {/* Fila 1: Especie | Tamaño | Edad | Sexo */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <FilterSelect
+          label="Especie"
+          paramKey="especie"
+          options={[
+            { value: "perro", label: "Perro" },
+            { value: "gato", label: "Gato" },
+          ]}
         />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => updateFilters("ciudad", ciudad)}
-        >
-          <Search className="h-4 w-4" />
-        </Button>
+        <FilterSelect
+          label="Tamaño"
+          paramKey="tamano"
+          options={[
+            { value: "pequeno", label: "Pequeño (hasta 10 kg)" },
+            { value: "mediano", label: "Mediano (11–25 kg)" },
+            { value: "grande", label: "Grande (26–45 kg)" },
+            { value: "gigante", label: "Gigante (más de 45 kg)" },
+          ]}
+        />
+        <FilterSelect
+          label="Edad"
+          paramKey="edad"
+          options={[
+            { value: "cachorro", label: "Cachorro (menos de 1 año)" },
+            { value: "joven", label: "Joven (1 a 4 años)" },
+            { value: "adulto", label: "Adulto (4 a 9 años)" },
+            { value: "senior", label: "Senior (más de 9 años)" },
+          ]}
+        />
+        <FilterSelect
+          label="Sexo"
+          paramKey="sexo"
+          options={[
+            { value: "macho", label: "Macho" },
+            { value: "hembra", label: "Hembra" },
+          ]}
+        />
+      </div>
+
+      {/* Fila 2: Cuota | Estado | Ciudad */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <FilterSelect
+          label="Cuota de recuperación"
+          paramKey="cuota"
+          options={[
+            { value: "si", label: "Sí" },
+            { value: "no", label: "No" },
+          ]}
+        />
+        <FilterSelect
+          label="Estado"
+          paramKey="estado"
+          placeholder="Todos"
+          options={ESTADOS.map((e) => ({ value: e, label: e }))}
+        />
+        <FilterSelect
+          label="Ciudad"
+          paramKey="ciudad"
+          placeholder={estadoSeleccionado ? "Todas" : "Elige estado primero"}
+          options={ciudades}
+          disabled={!estadoSeleccionado}
+        />
       </div>
 
       {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
-          <X className="h-4 w-4" />
-          Limpiar
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/mascotas")}
+            className="gap-1 text-muted-foreground"
+          >
+            <X className="h-4 w-4" />
+            Limpiar filtros
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, X } from "lucide-react";
+import { ESTADOS, ESTADOS_CIUDADES } from "@/lib/mexico-locations";
 
 export default function NuevaMascotaPage() {
   const router = useRouter();
@@ -31,12 +32,14 @@ export default function NuevaMascotaPage() {
     sex: "",
     size: "",
     description: "",
+    state: "",
     city: "",
+    recovery_fee: false,
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const ciudades = formData.state ? (ESTADOS_CIUDADES[formData.state] ?? []) : [];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -67,9 +70,7 @@ export default function NuevaMascotaPage() {
     setError("");
 
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       setError("Debes iniciar sesion");
@@ -77,7 +78,6 @@ export default function NuevaMascotaPage() {
       return;
     }
 
-    // Upload photos
     const photoUrls: string[] = [];
     for (const file of photoFiles) {
       const ext = file.name.split(".").pop();
@@ -92,9 +92,7 @@ export default function NuevaMascotaPage() {
         return;
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("pet-photos").getPublicUrl(path);
+      const { data: { publicUrl } } = supabase.storage.from("pet-photos").getPublicUrl(path);
       photoUrls.push(publicUrl);
     }
 
@@ -107,7 +105,9 @@ export default function NuevaMascotaPage() {
       size: formData.size,
       description: formData.description,
       photos: photoUrls,
+      state: formData.state,
       city: formData.city,
+      recovery_fee: formData.recovery_fee,
       rescuer_id: user.id,
     });
 
@@ -146,9 +146,7 @@ export default function NuevaMascotaPage() {
                 <Label>Especie</Label>
                 <Select
                   value={formData.species}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, species: val })
-                  }
+                  onValueChange={(val) => setFormData({ ...formData, species: val })}
                   required
                 >
                   <SelectTrigger>
@@ -181,9 +179,7 @@ export default function NuevaMascotaPage() {
                 <Label>Sexo</Label>
                 <Select
                   value={formData.sex}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, sex: val })
-                  }
+                  onValueChange={(val) => setFormData({ ...formData, sex: val })}
                   required
                 >
                   <SelectTrigger>
@@ -197,21 +193,20 @@ export default function NuevaMascotaPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Tamano</Label>
+                <Label>Tamaño</Label>
                 <Select
                   value={formData.size}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, size: val })
-                  }
+                  onValueChange={(val) => setFormData({ ...formData, size: val })}
                   required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pequeno">Pequeno</SelectItem>
-                    <SelectItem value="mediano">Mediano</SelectItem>
-                    <SelectItem value="grande">Grande</SelectItem>
+                    <SelectItem value="pequeno">Pequeño (hasta 10 kg)</SelectItem>
+                    <SelectItem value="mediano">Mediano (11–25 kg)</SelectItem>
+                    <SelectItem value="grande">Grande (26–45 kg)</SelectItem>
+                    <SelectItem value="gigante">Gigante (más de 45 kg)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -228,16 +223,71 @@ export default function NuevaMascotaPage() {
               />
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select
+                  value={formData.state}
+                  onValueChange={(val) => setFormData({ ...formData, state: val, city: "" })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ESTADOS.map((estado) => (
+                      <SelectItem key={estado} value={estado}>{estado}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Ciudad</Label>
+                <Select
+                  value={formData.city}
+                  onValueChange={(val) => setFormData({ ...formData, city: val })}
+                  disabled={!formData.state}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={formData.state ? "Seleccionar ciudad" : "Elige estado primero"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ciudades.map((ciudad) => (
+                      <SelectItem key={ciudad} value={ciudad}>{ciudad}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="city">Ciudad</Label>
-              <Input
-                id="city"
-                name="city"
-                required
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="Ej: Ciudad de Mexico"
-              />
+              <Label>¿Tiene cuota de recuperación?</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, recovery_fee: true })}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm transition-colors ${
+                    formData.recovery_fee
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted"
+                  }`}
+                >
+                  Sí
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, recovery_fee: false })}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm transition-colors ${
+                    !formData.recovery_fee
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted"
+                  }`}
+                >
+                  No
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -259,11 +309,7 @@ export default function NuevaMascotaPage() {
               <div className="grid grid-cols-4 gap-2">
                 {photoPreviews.map((src, i) => (
                   <div key={i} className="relative aspect-square overflow-hidden rounded-lg border">
-                    <img
-                      src={src}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={src} alt="" className="h-full w-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removePhoto(i)}
