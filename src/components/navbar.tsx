@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, PawPrint, LayoutDashboard } from "lucide-react";
+import { Menu, LayoutDashboard } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 export function Navbar() {
@@ -33,7 +34,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <PawPrint className="h-7 w-7 text-primary" />
+          <Image src="/logo-kahu.png" alt="Kahu" width={36} height={36} className="rounded-full" />
           <span className="text-xl font-bold text-primary">Kahu</span>
         </Link>
 

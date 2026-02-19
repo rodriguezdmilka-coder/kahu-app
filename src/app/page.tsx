@@ -1,7 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PawPrint, Heart, MessageCircle, Search } from "lucide-react";
+import { Heart, MessageCircle, Search } from "lucide-react";
 
 export default function Home() {
   return (
@@ -10,7 +11,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background px-4 py-20 text-center md:py-32">
         <div className="container mx-auto max-w-3xl">
           <div className="mb-6 flex justify-center">
-            <PawPrint className="h-16 w-16 text-primary" />
+            <Image src="/logo-kahu.png" alt="Kahu" width={120} height={120} />
           </div>
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
             Encuentra a tu nuevo mejor amigo
@@ -112,8 +113,8 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t px-4 py-8">
         <div className="container mx-auto flex flex-col items-center gap-2 text-center text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <PawPrint className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <Image src="/logo-kahu.png" alt="Kahu" width={24} height={24} className="rounded-full" />
             <span className="font-medium">Kahu</span>
           </div>
           <p>Conectando mascotas con hogares en Mexico.</p>
