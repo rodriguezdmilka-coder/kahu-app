@@ -1,60 +1,79 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { SolicitudesContent } from "./solicitudes-content";
+import type { UserRole } from "@/lib/types";
 
-export default async function SolicitudesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+export default function SolicitudesPage() {
+  const [data, setData] = useState<{
+    requests: unknown[];
+    role: UserRole;
+    userId: string;
+  } | null>(null);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  useEffect(() => {
+    const supabase = createClient();
 
-  if (!profile) redirect("/login");
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
 
-  let requests;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-  if (profile.role === "rescatista") {
-    // Get requests for rescuer's pets
-    const { data } = await supabase
-      .from("adoption_requests")
-      .select(`
-        *,
-        pet:pets(*),
-        adopter:profiles!adoption_requests_adopter_id_fkey(*)
-      `)
-      .in(
-        "pet_id",
-        (
-          await supabase
-            .from("pets")
-            .select("id")
-            .eq("rescuer_id", user.id)
-        ).data?.map((p) => p.id) || []
-      )
-      .order("created_at", { ascending: false });
-    requests = data;
-  } else {
-    // Get adopter's own requests
-    const { data } = await supabase
-      .from("adoption_requests")
-      .select(`
-        *,
-        pet:pets(*)
-      `)
-      .eq("adopter_id", user.id)
-      .order("created_at", { ascending: false });
-    requests = data;
+      if (!profile) return;
+
+      let requests;
+
+      if (profile.role === "rescatista") {
+        const { data: pets } = await supabase
+          .from("pets")
+          .select("id")
+          .eq("rescuer_id", user.id);
+
+        const petIds = (pets || []).map((p: { id: string }) => p.id);
+
+        if (petIds.length > 0) {
+          const { data: reqs } = await supabase
+            .from("adoption_requests")
+            .select(
+              `*, pet:pets(*), adopter:profiles!adoption_requests_adopter_id_fkey(*)`
+            )
+            .in("pet_id", petIds)
+            .order("created_at", { ascending: false });
+          requests = reqs;
+        } else {
+          requests = [];
+        }
+      } else {
+        const { data: reqs } = await supabase
+          .from("adoption_requests")
+          .select(`*, pet:pets(*)`)
+          .eq("adopter_id", user.id)
+          .order("created_at", { ascending: false });
+        requests = reqs;
+      }
+
+      setData({ requests: requests || [], role: profile.role, userId: user.id });
+    });
+  }, []);
+
+  if (!data) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    );
   }
 
   return (
     <SolicitudesContent
-      requests={requests || []}
-      role={profile.role}
-      userId={user.id}
+      requests={data.requests as never}
+      role={data.role}
+      userId={data.userId}
     />
   );
 }

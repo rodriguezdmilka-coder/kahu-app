@@ -1,6 +1,8 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,24 +21,34 @@ const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
   adoptado: "outline",
 };
 
-export default async function MisMascotasPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+export default function MisMascotasPage() {
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase
+          .from("pets")
+          .select("*")
+          .eq("rescuer_id", user.id)
+          .order("created_at", { ascending: false })
+          .then(({ data }) => {
+            setPets(data || []);
+            setLoading(false);
+          });
+      }
+    });
+  }, []);
 
-  if (profile?.role !== "rescatista") redirect("/dashboard");
-
-  const { data: pets } = await supabase
-    .from("pets")
-    .select("*")
-    .eq("rescuer_id", user.id)
-    .order("created_at", { ascending: false });
+  if (loading) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -50,9 +62,9 @@ export default async function MisMascotasPage() {
         </Link>
       </div>
 
-      {pets && pets.length > 0 ? (
+      {pets.length > 0 ? (
         <div className="space-y-4">
-          {pets.map((pet: Pet) => (
+          {pets.map((pet) => (
             <Link key={pet.id} href={`/dashboard/mascotas/${pet.id}`}>
               <Card className="transition-shadow hover:shadow-md">
                 <CardContent className="flex items-center gap-4 p-4">

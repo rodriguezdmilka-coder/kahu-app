@@ -1,8 +1,8 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+// Auth protection is handled client-side in dashboard/layout.tsx
+export function middleware(request: NextRequest) {
+  return NextResponse.next();
 }
 
 export const config = {
