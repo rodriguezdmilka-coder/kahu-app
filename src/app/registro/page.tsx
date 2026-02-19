@@ -33,7 +33,8 @@ export default function RegistroPage() {
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
     const { data, error: authError } = await supabase.auth.signUp({
       email: formData.email,
@@ -65,6 +66,12 @@ export default function RegistroPage() {
       }
 
       router.push("/dashboard");
+    }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Registro error:", err);
+      setError("Error inesperado: " + msg);
+      setLoading(false);
     }
   };
 
