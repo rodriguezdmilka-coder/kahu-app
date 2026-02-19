@@ -38,13 +38,13 @@ function SingleChoice({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="flex flex-col gap-1.5">
       {options.map((opt) => (
         <button
           key={opt}
           type="button"
           onClick={() => onChange(opt)}
-          className={`rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+          className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
             value === opt
               ? "border-primary bg-primary text-primary-foreground"
               : "border-border bg-background hover:bg-muted"
@@ -73,13 +73,13 @@ function MultiChoice({
     );
   };
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="flex flex-col gap-1.5">
       {options.map((opt) => (
         <button
           key={opt}
           type="button"
           onClick={() => toggle(opt)}
-          className={`rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+          className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
             values.includes(opt)
               ? "border-primary bg-primary text-primary-foreground"
               : "border-border bg-background hover:bg-muted"
