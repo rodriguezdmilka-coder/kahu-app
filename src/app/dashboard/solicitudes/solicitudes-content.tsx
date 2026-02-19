@@ -9,6 +9,34 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Check, X, ClipboardList, PawPrint } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 
+/* Muestra las respuestas del formulario de adopcion de forma legible */
+function AdoptionAnswers({ message }: { message: string }) {
+  let parsed: Record<string, string | string[]> | null = null;
+  try {
+    const obj = JSON.parse(message);
+    if (obj && typeof obj === "object" && !Array.isArray(obj)) parsed = obj;
+  } catch {
+    // mensaje de texto plano (solicitudes antiguas)
+  }
+
+  if (!parsed) {
+    return <p className="mb-3 text-sm">{message}</p>;
+  }
+
+  return (
+    <div className="mb-3 space-y-1 rounded-lg bg-muted/50 p-3 text-sm">
+      {Object.entries(parsed).map(([label, value]) => (
+        <div key={label} className="flex flex-col sm:flex-row sm:gap-2">
+          <span className="font-medium text-foreground shrink-0">{label}:</span>
+          <span className="text-muted-foreground">
+            {Array.isArray(value) ? value.join(", ") : value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const statusLabel: Record<string, string> = {
   pendiente: "Pendiente",
   aceptada: "Aceptada",
@@ -121,7 +149,7 @@ export function SolicitudesContent({
                       </p>
                     )}
 
-                    <p className="mb-3 text-sm">{req.message}</p>
+                    <AdoptionAnswers message={req.message} />
 
                     {role === "rescatista" && req.status === "pendiente" && (
                       <div className="flex gap-2">
