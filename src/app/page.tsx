@@ -11,7 +11,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background px-4 py-20 text-center md:py-32">
         <div className="container mx-auto max-w-3xl">
           <div className="mb-6 flex justify-center">
-            <Image src="/logo-kahu.png" alt="Kahu" width={120} height={120} />
+            <Image src="/logo-kahu.png" alt="Kahu" width={240} height={240} />
           </div>
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
             Encuentra a tu nuevo mejor amigo
