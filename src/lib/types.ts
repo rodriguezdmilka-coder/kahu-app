@@ -32,6 +32,8 @@ export interface Pet {
   city: string;
   state: string | null;
   recovery_fee: boolean;
+  vaccinated: boolean;
+  sterilized: boolean;
   rescuer_id: string;
   created_at: string;
 }

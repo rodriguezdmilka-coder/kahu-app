@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,16 +14,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { MapPin, Calendar, Heart, ArrowLeft, User } from "lucide-react";
+import { MapPin, Calendar, Heart, ArrowLeft, User, Check, X } from "lucide-react";
 import type { Pet, Profile } from "@/lib/types";
 
 function formatAge(months: number): string {
   if (months < 12) return `${months} ${months === 1 ? "mes" : "meses"}`;
   const years = Math.floor(months / 12);
   const remaining = months % 12;
-  let text = `${years} ${years === 1 ? "ano" : "anos"}`;
+  let text = `${years} ${years === 1 ? "año" : "años"}`;
   if (remaining > 0) text += ` ${remaining} m`;
   return text;
+}
+
+function formatSize(size: string): string {
+  const map: Record<string, string> = {
+    pequeno: "Pequeño (hasta 10 kg)",
+    mediano: "Mediano (11–25 kg)",
+    grande: "Grande (26–45 kg)",
+    gigante: "Gigante (más de 45 kg)",
+  };
+  return map[size] ?? size;
 }
 
 /* ── Componente de opción única ── */
@@ -92,7 +101,6 @@ function MultiChoice({
   );
 }
 
-/* ── Sección con título ── */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
@@ -142,6 +150,24 @@ function isComplete(f: FormAnswers) {
     f.travel_plan &&
     f.return_circumstances.length > 0 &&
     f.motivation.trim()
+  );
+}
+
+/* ── Health badge ── */
+function HealthItem({ ok, labelOk, labelNo }: { ok: boolean; labelOk: string; labelNo: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      {ok ? (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-600">
+          <Check className="h-3 w-3" />
+        </span>
+      ) : (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 text-orange-500">
+          <X className="h-3 w-3" />
+        </span>
+      )}
+      <span>{ok ? labelOk : labelNo}</span>
+    </div>
   );
 }
 
@@ -227,89 +253,118 @@ export function PetDetail({ pet, rescuerName }: { pet: Pet; rescuerName: string 
         </div>
 
         {/* Info */}
-        <div>
-          <div className="mb-4 flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{pet.name}</h1>
-            <Badge variant={pet.species === "perro" ? "default" : "secondary"}>
-              {pet.species}
-            </Badge>
-          </div>
+        <div className="flex flex-col gap-4">
 
-          <div className="mb-6 flex flex-wrap gap-3">
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              {formatAge(pet.age_months)}
-            </div>
-            <div className="text-sm text-muted-foreground capitalize">
-              {pet.sex} &middot; {pet.size}
-            </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              {pet.city}
-            </div>
-          </div>
+          {/* Nombre */}
+          <h1 className="text-3xl font-bold">{pet.name}</h1>
 
-          {pet.breed && (
-            <p className="mb-2 text-sm"><span className="font-medium">Raza:</span> {pet.breed}</p>
+          {/* Ubicación */}
+          {(pet.city || pet.state) && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <MapPin className="h-4 w-4 shrink-0" />
+              <span className="text-sm">
+                {[pet.city, pet.state].filter(Boolean).join(", ")}
+              </span>
+            </div>
           )}
 
-          <div className="mb-6">
-            <h2 className="mb-2 font-semibold">Sobre {pet.name}</h2>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{pet.description}</p>
+          {/* Edad · Sexo · Tamaño */}
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              {formatAge(pet.age_months)}
+            </span>
+            <span>·</span>
+            <span className="capitalize">{pet.sex}</span>
+            <span>·</span>
+            <span>{formatSize(pet.size)}</span>
           </div>
 
-          <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+          {/* Raza */}
+          {pet.breed && (
+            <p className="text-sm">
+              <span className="font-medium">Raza:</span> {pet.breed}
+            </p>
+          )}
+
+          {/* Sobre la mascota */}
+          <div className="rounded-lg border p-4">
+            <h2 className="mb-2 font-semibold">Sobre {pet.name}</h2>
+            <p className="whitespace-pre-line text-sm text-muted-foreground">
+              {pet.description}
+            </p>
+          </div>
+
+          {/* Salud */}
+          <div className="rounded-lg border p-4">
+            <h2 className="mb-3 font-semibold">Salud</h2>
+            <div className="space-y-2">
+              <HealthItem
+                ok={pet.sterilized}
+                labelOk="Esterilizado/a"
+                labelNo="Compromiso de esterilización"
+              />
+              <HealthItem
+                ok={pet.vaccinated}
+                labelOk="Vacunas al día"
+                labelNo="Faltan vacunas"
+              />
+            </div>
+          </div>
+
+          {/* Publicado por */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-4 w-4" />
             <span>Publicado por {rescuerName}</span>
           </div>
 
           {/* Botón de adopción */}
           {pet.status !== "disponible" ? (
-            <Badge variant="secondary" className="text-base">
-              {pet.status === "en_proceso" ? "En proceso de adopcion" : "Adoptado"}
-            </Badge>
+            <div className="rounded-lg border bg-muted/50 p-3 text-center text-sm text-muted-foreground">
+              {pet.status === "en_proceso" ? "En proceso de adopción" : "Ya fue adoptado"}
+            </div>
           ) : !authChecked ? (
             <Button size="lg" className="w-full" disabled>Cargando...</Button>
           ) : submitted ? (
             <div className="rounded-lg border bg-primary/5 p-4 text-center">
               <p className="font-medium text-primary">Solicitud enviada</p>
-              <p className="text-sm text-muted-foreground">El rescatista revisara tu solicitud.</p>
+              <p className="text-sm text-muted-foreground">El rescatista revisará tu solicitud.</p>
             </div>
           ) : !userProfile ? (
             <div className="space-y-2">
               <Link href="/login">
                 <Button size="lg" className="w-full gap-2">
                   <Heart className="h-4 w-4" />
-                  Inicia sesion para adoptar
+                  Inicia sesión para adoptar
                 </Button>
               </Link>
               <p className="text-center text-xs text-muted-foreground">
-                Necesitas una cuenta para solicitar la adopcion.{" "}
-                <Link href="/registro" className="underline">Registrate aqui</Link>
+                ¿No tienes cuenta?{" "}
+                <Link href="/registro" className="underline">Regístrate aquí</Link>
               </p>
             </div>
           ) : userProfile.role === "rescatista" ? (
-            <p className="text-sm text-muted-foreground">Como rescatista no puedes solicitar adopciones.</p>
+            <p className="text-sm text-muted-foreground">
+              Como rescatista no puedes solicitar adopciones.
+            </p>
           ) : (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="lg" className="w-full gap-2">
                   <Heart className="h-4 w-4" />
-                  Solicitar adopcion
+                  Solicitar adopción
                 </Button>
               </DialogTrigger>
 
               <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Solicitar adopcion de {pet.name}</DialogTitle>
+                  <DialogTitle>Solicitar adopción de {pet.name}</DialogTitle>
                   <p className="text-sm text-muted-foreground">
                     Cuéntanos un poco sobre ti. Son 9 preguntas rápidas.
                   </p>
                 </DialogHeader>
 
                 <div className="space-y-6 pb-2">
-
-                  {/* ── Sección: Hogar ── */}
                   <Section title="Tu hogar">
                     <div className="space-y-2">
                       <Label>¿Dónde vives?</Label>
@@ -337,7 +392,6 @@ export function PetDetail({ pet, rescuerName }: { pet: Pet; rescuerName: string 
                     </div>
                   </Section>
 
-                  {/* ── Sección: Rutina ── */}
                   <Section title="Tu rutina">
                     <div className="space-y-2">
                       <Label>¿Cuántas horas al día suele haber alguien en casa?</Label>
@@ -357,7 +411,6 @@ export function PetDetail({ pet, rescuerName }: { pet: Pet; rescuerName: string 
                     </div>
                   </Section>
 
-                  {/* ── Sección: Experiencia ── */}
                   <Section title="Experiencia con mascotas">
                     <div className="space-y-2">
                       <Label>¿Has tenido mascotas antes?</Label>
@@ -377,7 +430,6 @@ export function PetDetail({ pet, rescuerName }: { pet: Pet; rescuerName: string 
                     </div>
                   </Section>
 
-                  {/* ── Sección: Compromiso ── */}
                   <Section title="Compromiso">
                     <div className="space-y-2">
                       <Label>¿Qué harías con la mascota cuando viajes?</Label>
@@ -388,7 +440,10 @@ export function PetDetail({ pet, rescuerName }: { pet: Pet; rescuerName: string 
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>¿En qué circunstancias considerarías devolver al animal? <span className="text-muted-foreground">(puedes elegir varias)</span></Label>
+                      <Label>
+                        ¿En qué circunstancias considerarías devolver al animal?{" "}
+                        <span className="text-muted-foreground">(puedes elegir varias)</span>
+                      </Label>
                       <MultiChoice
                         options={["Problemas graves de comportamiento", "Alergia de alguien en casa", "Cambio de vivienda que no permite mascotas", "No la devolvería bajo ninguna circunstancia"]}
                         values={form.return_circumstances}
@@ -397,7 +452,6 @@ export function PetDetail({ pet, rescuerName }: { pet: Pet; rescuerName: string 
                     </div>
                   </Section>
 
-                  {/* ── Motivación ── */}
                   <Section title="Motivación">
                     <div className="space-y-2">
                       <Label>¿Por qué quieres adoptar a {pet.name}?</Label>

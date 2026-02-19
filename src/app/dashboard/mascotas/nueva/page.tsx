@@ -35,6 +35,8 @@ export default function NuevaMascotaPage() {
     state: "",
     city: "",
     recovery_fee: false,
+    vaccinated: false,
+    sterilized: false,
   });
 
   const ciudades = formData.state ? (ESTADOS_CIUDADES[formData.state] ?? []) : [];
@@ -108,6 +110,8 @@ export default function NuevaMascotaPage() {
       state: formData.state,
       city: formData.city,
       recovery_fee: formData.recovery_fee,
+      vaccinated: formData.vaccinated,
+      sterilized: formData.sterilized,
       rescuer_id: user.id,
     });
 
@@ -259,6 +263,30 @@ export default function NuevaMascotaPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Salud</Label>
+              <div className="space-y-2">
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50">
+                  <input
+                    type="checkbox"
+                    checked={formData.vaccinated}
+                    onChange={(e) => setFormData({ ...formData, vaccinated: e.target.checked })}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="text-sm">Vacunas al día</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50">
+                  <input
+                    type="checkbox"
+                    checked={formData.sterilized}
+                    onChange={(e) => setFormData({ ...formData, sterilized: e.target.checked })}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="text-sm">Esterilizado/a</span>
+                </label>
               </div>
             </div>
 
