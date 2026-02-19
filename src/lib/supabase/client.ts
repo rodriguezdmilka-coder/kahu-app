@@ -28,6 +28,29 @@ export function createClient(): AnySupabaseClient {
       // We rebuild RequestInit with only the standard browser-compatible properties.
       fetch: (url: RequestInfo | URL, init?: RequestInit) => {
         const raw = (init ?? {}) as Record<string, unknown>;
+        const urlStr =
+          typeof url === "string"
+            ? url
+            : url instanceof URL
+            ? url.href
+            : (url as { url: string }).url;
+
+        // Log exactly what is being passed so we can diagnose the issue
+        console.log("[KAHU] fetch →", urlStr);
+        console.log("[KAHU] init keys:", Object.keys(raw));
+        for (const [k, v] of Object.entries(raw)) {
+          console.log(
+            `[KAHU]   ${k}:`,
+            v instanceof Headers
+              ? `Headers(${JSON.stringify(Object.fromEntries((v as Headers).entries()))})`
+              : v instanceof ReadableStream
+              ? "ReadableStream"
+              : typeof v === "string"
+              ? v.substring(0, 80)
+              : typeof v
+          );
+        }
+
         const safeInit: RequestInit = {};
         if (raw.method) safeInit.method = raw.method as string;
         if (raw.headers) safeInit.headers = raw.headers as HeadersInit;
@@ -40,13 +63,8 @@ export function createClient(): AnySupabaseClient {
         if (raw.redirect) safeInit.redirect = raw.redirect as RequestRedirect;
         if (raw.referrer) safeInit.referrer = raw.referrer as string;
         if (raw.integrity) safeInit.integrity = raw.integrity as string;
-        // Normalize URL to string to avoid Request object issues
-        const urlStr =
-          typeof url === "string"
-            ? url
-            : url instanceof URL
-            ? url.href
-            : (url as { url: string }).url;
+
+        console.log("[KAHU] safeInit:", JSON.stringify(safeInit, null, 2));
         return window.fetch(urlStr, safeInit);
       },
     },
