@@ -13,37 +13,37 @@ export default function ChatPage() {
     currentUserId: string;
     otherUserName: string;
     petName: string;
+    petId: string;
+    requestId: string;
     initialMessages: Message[];
+    initialStatus: string;
+    initialConfirmedRescuer: boolean;
+    initialConfirmedAdopter: boolean;
+    isRescuer: boolean;
   } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
+      if (!user) { router.replace("/login"); return; }
 
       const { data: conversation } = await supabase
         .from("conversations")
-        .select(`*, request:adoption_requests(pet:pets(name))`)
+        .select(`*, request:adoption_requests(id, status, confirmed_by_rescuer, confirmed_by_adopter, pet:pets(id, name))`)
         .eq("id", params.id)
         .single();
 
       if (
         !conversation ||
-        (conversation.rescuer_id !== user.id &&
-          conversation.adopter_id !== user.id)
+        (conversation.rescuer_id !== user.id && conversation.adopter_id !== user.id)
       ) {
         router.replace("/dashboard/chat");
         return;
       }
 
-      const otherId =
-        conversation.rescuer_id === user.id
-          ? conversation.adopter_id
-          : conversation.rescuer_id;
+      const isRescuer = conversation.rescuer_id === user.id;
+      const otherId = isRescuer ? conversation.adopter_id : conversation.rescuer_id;
 
       const { data: otherProfile } = await supabase
         .from("profiles")
@@ -57,11 +57,19 @@ export default function ChatPage() {
         .eq("conversation_id", params.id)
         .order("created_at", { ascending: true });
 
+      const req = conversation.request;
+
       setChatData({
         currentUserId: user.id,
         otherUserName: otherProfile?.full_name || "Usuario",
-        petName: conversation.request?.pet?.name || "Mascota",
+        petName: req?.pet?.name || "Mascota",
+        petId: req?.pet?.id || "",
+        requestId: req?.id || "",
         initialMessages: messages || [],
+        initialStatus: req?.status || "aceptada",
+        initialConfirmedRescuer: req?.confirmed_by_rescuer ?? false,
+        initialConfirmedAdopter: req?.confirmed_by_adopter ?? false,
+        isRescuer,
       });
     });
   }, [params.id, router]);
@@ -80,7 +88,13 @@ export default function ChatPage() {
       currentUserId={chatData.currentUserId}
       otherUserName={chatData.otherUserName}
       petName={chatData.petName}
+      petId={chatData.petId}
+      requestId={chatData.requestId}
       initialMessages={chatData.initialMessages}
+      initialStatus={chatData.initialStatus}
+      initialConfirmedRescuer={chatData.initialConfirmedRescuer}
+      initialConfirmedAdopter={chatData.initialConfirmedAdopter}
+      isRescuer={chatData.isRescuer}
     />
   );
 }

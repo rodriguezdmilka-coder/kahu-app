@@ -3,8 +3,19 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, MessageCircle, Search } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { count: adoptionsCount } = await supabase
+    .from("adoption_requests")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "completada");
+
+  const { count: petsCount } = await supabase
+    .from("pets")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "disponible");
   return (
     <div>
       {/* Hero */}
@@ -33,6 +44,22 @@ export default function Home() {
                 Soy rescatista
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Estadisticas */}
+      <section className="border-y bg-muted/40 px-4 py-10">
+        <div className="container mx-auto max-w-3xl">
+          <div className="grid grid-cols-2 gap-6 text-center sm:grid-cols-2">
+            <div>
+              <p className="text-4xl font-bold text-primary">{adoptionsCount ?? 0}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Adopciones exitosas</p>
+            </div>
+            <div>
+              <p className="text-4xl font-bold text-primary">{petsCount ?? 0}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Mascotas disponibles</p>
+            </div>
           </div>
         </div>
       </section>
