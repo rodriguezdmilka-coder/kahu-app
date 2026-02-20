@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PawPrint, ClipboardList, MessageCircle, Plus, LogOut } from "lucide-react";
+import { PawPrint, ClipboardList, MessageCircle, Plus, LogOut, Heart } from "lucide-react";
 import type { Profile } from "@/lib/types";
 
 export function DashboardContent({ profile }: { profile: Profile }) {
@@ -96,6 +96,22 @@ export function DashboardContent({ profile }: { profile: Profile }) {
             </CardContent>
           </Card>
         </Link>
+
+        {!isRescuer && (
+          <Link href="/dashboard/favoritos">
+            <Card className="cursor-pointer transition-shadow hover:shadow-md">
+              <CardHeader className="flex flex-row items-center gap-3">
+                <Heart className="h-8 w-8 text-primary" />
+                <CardTitle className="text-lg">Favoritos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Las mascotas que guardaste como favoritas.
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
       </div>
     </div>
   );

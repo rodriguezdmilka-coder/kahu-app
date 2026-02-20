@@ -57,6 +57,14 @@ export interface Conversation {
   created_at: string;
 }
 
+export interface Favorite {
+  id: string;
+  user_id: string;
+  pet_id: string;
+  created_at: string;
+  pet?: Pet;
+}
+
 export interface Message {
   id: string;
   conversation_id: string;

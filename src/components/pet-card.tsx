@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, Heart } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import type { Pet } from "@/lib/types";
 
 function formatAge(months: number): string {
@@ -15,16 +19,84 @@ function formatAge(months: number): string {
 
 export function PetCard({ pet }: { pet: Pet }) {
   const photoUrl = pet.photos?.[0] || "/placeholder-pet.svg";
+  const [isFav, setIsFav] = useState(false);
+  const [isAdoptante, setIsAdoptante] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role !== "adoptante") return;
+
+      setUserId(user.id);
+      setIsAdoptante(true);
+
+      const { data: fav } = await supabase
+        .from("favorites")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("pet_id", pet.id)
+        .maybeSingle();
+
+      if (fav) setIsFav(true);
+    });
+  }, [pet.id]);
+
+  const toggleFav = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!userId || loading) return;
+
+    setLoading(true);
+    const supabase = createClient();
+
+    if (isFav) {
+      await supabase
+        .from("favorites")
+        .delete()
+        .eq("user_id", userId)
+        .eq("pet_id", pet.id);
+      setIsFav(false);
+    } else {
+      await supabase
+        .from("favorites")
+        .insert({ user_id: userId, pet_id: pet.id });
+      setIsFav(true);
+    }
+    setLoading(false);
+  };
 
   return (
     <Link href={`/mascotas/${pet.id}`}>
       <Card className="group overflow-hidden transition-shadow hover:shadow-lg">
-        <div className="aspect-square overflow-hidden bg-muted">
+        <div className="relative aspect-square overflow-hidden bg-muted">
           <img
             src={photoUrl}
             alt={pet.name}
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
           />
+          {isAdoptante && (
+            <button
+              onClick={toggleFav}
+              disabled={loading}
+              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow-sm backdrop-blur-sm transition-transform hover:scale-110 active:scale-95"
+            >
+              <Heart
+                className={`h-4 w-4 transition-colors ${
+                  isFav ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                }`}
+              />
+            </button>
+          )}
         </div>
         <CardContent className="p-4">
           <div className="mb-2 flex items-center justify-between">
